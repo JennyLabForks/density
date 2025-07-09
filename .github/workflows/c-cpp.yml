@@ -15,5 +15,5 @@ jobs:
     - uses: actions/checkout@v4
     - name: make
       run: make
-    - name: benchmark
-      run: build/benchmark -f
+    #- name: benchmark
+    # run: build/benchmark -f
