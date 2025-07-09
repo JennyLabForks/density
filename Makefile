@@ -42,15 +42,14 @@ TARGET_TRIPLE := $(subst -, ,$(shell $(CC) -dumpmachine))
 TARGET_ARCH   := $(word 1,$(TARGET_TRIPLE))
 TARGET_OS     := $(word 3,$(TARGET_TRIPLE))
 
-# Las flags -fpic/-fPIC ya se incluyen en CFLAGS de forma incondicional para el 'wrapping' de Python.
-# Este bloque se mantiene por si hubiera otras flags específicas de OS que no sean -fpic.
+
 ifeq ($(TARGET_OS),mingw32)
 else ifeq ($(TARGET_OS),cygwin)
 else
-	# CFLAGS += -fpic # Ya incluido en CFLAGS globalmente
+	# CFLAGS += -fpic
 endif
 
-# Flags de arquitectura (32/64 bits).
+# Flags arch (32/64 bits).
 ifeq ($(ARCH),)
 	ifeq ($(NATIVE),)
 		ifeq ($(TARGET_ARCH),powerpc)
@@ -71,7 +70,7 @@ else
 	endif
 endif
 
-# Configuración de variables para diferentes sistemas operativos (Windows/Linux/macOS).
+# Multi-OS configuration
 ifeq ($(OS),Windows_NT)
 	bold =
 	normal =
@@ -98,43 +97,43 @@ else
 endif
 STATIC_EXTENSION = .a
 
-# Archivos de dependencia generados por -MD.
+# Depends File Make Weeda -MD.
 DEPS=$(wildcard *.d)
 
 .PHONY: pre-compile post-compile pre-link post-link library benchmark all clean
 
-# Objetivo por defecto.
+# Default Objects
 all: benchmark
 
-# Regla para compilar archivos .c a .o.
+# Compilation *.c to *.o.
 $(DENSITY_BUILD_DIRECTORY)/%.o: $(SRC_DIRECTORY)/%.c
 	@mkdir -p "$(@D)"
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Mensaje antes de la compilación.
+# Msg before compilation
 pre-compile:
 	@echo ${bold}Compiling Density${normal} ...
 
-# Compila todos los archivos fuente a objetos.
+# Make objects
 compile: pre-compile $(DENSITY_OBJ)
 
-# Mensaje después de la compilación.
+# post-compile actions
 post-compile: compile
 	@echo Done.
 	@echo
 
-# Mensaje antes del enlazado.
+# Msg to linking
 pre-link : post-compile
 	@echo ${bold}Linking Density as a library${normal} ...
 
-# Enlaza los archivos objeto para crear la librería estática y dinámica.
+# Linking static and shared libraries
 link: pre-link $(DENSITY_OBJ)
-	# Crea la librería estática.
+	# Make static lib
 	$(AR) crs $(BUILD_DIRECTORY)/$(TARGET)$(STATIC_EXTENSION) $(DENSITY_OBJ)
-	# Crea la librería dinámica.
+	# Make shared lib
 	$(CC) $(LFLAGS) -shared -o $(BUILD_DIRECTORY)/$(TARGET)$(EXTENSION) $(DENSITY_OBJ)
 
-# Mensaje después del enlazado y muestra las rutas de las librerías.
+# MSG After linking
 post-link: link
 	@echo Done.
 	@echo
@@ -142,19 +141,19 @@ post-link: link
 	@echo Dynamic library file : ${bold}$(BUILD_DIRECTORY)$(SEPARATOR)$(TARGET)$(EXTENSION)${normal}
 	@echo
 
-# Dependencia para asegurar que la librería dinámica se construye.
+# Dependencies 
 $(BUILD_DIRECTORY)/$(TARGET)$(EXTENSION): post-link
 
-# Objetivo para construir solo la librería.
+# Objects to Deps
 library: post-link
 
-# Objetivo para construir la librería y luego el benchmark.
+# Make a benchmark test example
 benchmark: library
 	@$(MAKE) -C benchmark/
 	@echo Please type ${bold}$(BUILD_DIRECTORY)$(SEPARATOR)benchmark$(BENCHMARK_EXTENSION)${normal} to launch the benchmark binary.
 	@echo
 
-# Objetivo para limpiar todos los archivos generados.
+# clean objects 
 clean:
 	@$(MAKE) -C benchmark/ clean
 	@echo ${bold}Cleaning Density build files${normal} ...
@@ -165,5 +164,5 @@ clean:
 	@echo Done.
 	@echo
 
-# Incluye los archivos de dependencia generados automáticamente.
+# Include dependencies and objects
 -include $(DENSITY_OBJ:.o=.d)
